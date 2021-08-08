@@ -211,7 +211,10 @@ class TrajectoryDataset(Dataset):
         """
         super(TrajectoryDataset, self).__init__()
 
+
         self.data_dir = data_dir
+        print(self.data_dir)
+
         self.obs_len = obs_len
         self.pred_len = pred_len
         self.skip = skip
@@ -242,8 +245,6 @@ class TrajectoryDataset(Dataset):
             #
 
             for idx in range(0, num_sequences * self.skip, skip):
-                
-                print("from {} to {} idx {}".format(0,num_sequences* self.skip,idx))
                 
                 curr_seq_data = np.concatenate(
                     frame_data[idx:idx + self.seq_len], axis=0)

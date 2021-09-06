@@ -53,7 +53,7 @@ parser.add_argument('--noise_dim', default=None, type=int_tuple)
 parser.add_argument('--noise_type', default='gaussian')
 parser.add_argument('--noise_mix_type', default='ped')
 parser.add_argument('--clipping_threshold_g', default=0, type=float)
-parser.add_argument('--g_learning_rate', default=5e-4, type=float)
+parser.add_argument('--g_learning_rate', default=5e-7, type=float)
 parser.add_argument('--g_steps', default=1, type=int)
 
 # Pooling Options
@@ -70,7 +70,7 @@ parser.add_argument('--grid_size', default=8, type=int)
 # Discriminator Options
 parser.add_argument('--d_type', default='local', type=str)
 parser.add_argument('--encoder_h_dim_d', default=64, type=int)
-parser.add_argument('--d_learning_rate', default=5e-4, type=float)
+parser.add_argument('--d_learning_rate', default=5e-7, type=float)
 parser.add_argument('--d_steps', default=2, type=int)
 parser.add_argument('--clipping_threshold_d', default=0, type=float)
 
@@ -81,7 +81,7 @@ parser.add_argument('--best_k', default=1, type=int)
 # Output
 parser.add_argument('--output_dir', default=os.getcwd())
 parser.add_argument('--print_every', default=5, type=int)
-parser.add_argument('--checkpoint_every', default=100, type=int)
+parser.add_argument('--checkpoint_every', default=250, type=int)
 parser.add_argument('--checkpoint_name', default='checkpoint')
 parser.add_argument('--checkpoint_start_from', default=None)
 parser.add_argument('--restore_from_checkpoint', default=1, type=int)
@@ -146,6 +146,7 @@ def main(args):
         neighborhood_size=args.neighborhood_size,
         grid_size=args.grid_size,
         batch_norm=args.batch_norm)
+        
 
     generator.apply(init_weights)
     generator.type(float_dtype).train()
@@ -175,7 +176,6 @@ def main(args):
     optimizer_d = optim.Adam(
         discriminator.parameters(), lr=args.d_learning_rate
     )
-
     # Maybe restore from checkpoint
     restore_path = None
     if args.checkpoint_start_from is not None:
@@ -240,9 +240,11 @@ def main(args):
             # discriminator followed by args.g_steps steps on the generator.
             if d_steps_left > 0:
                 step_type = 'd'
+                #print('$$$$$$$$$$ doing a discriminator step $$$$$$$$')
                 losses_d = discriminator_step(args, batch, generator,
                                               discriminator, d_loss_fn,
                                               optimizer_d)
+                #print('======== did a discriminator step')
                 checkpoint['norm_d'].append(
                     get_total_norm(discriminator.parameters()))
                 d_steps_left -= 1
@@ -251,6 +253,7 @@ def main(args):
                 losses_g = generator_step(args, batch, generator,
                                           discriminator, g_loss_fn,
                                           optimizer_g)
+                #print('========= did a generator step')
                 checkpoint['norm_g'].append(
                     get_total_norm(generator.parameters())
                 )
@@ -297,7 +300,7 @@ def main(args):
                 logger.info('Checking stats on train ...')
                 metrics_train = check_accuracy(
                     args, train_loader, generator, discriminator,
-                    d_loss_fn, limit=True
+                    d_loss_fn,
                 )
 
                 for k, v in sorted(metrics_val.items()):
@@ -307,6 +310,8 @@ def main(args):
                     logger.info('  [train] {}: {:.3f}'.format(k, v))
                     checkpoint['metrics_train'][k].append(v)
 
+
+                print('can u load pls')
                 min_ade = min(checkpoint['metrics_val']['ade'])
                 min_ade_nl = min(checkpoint['metrics_val']['ade_nl'])
 
@@ -322,6 +327,8 @@ def main(args):
                     checkpoint['g_best_nl_state'] = generator.state_dict()
                     checkpoint['d_best_nl_state'] = discriminator.state_dict()
 
+
+                print('gonna save the model')
                 # Save another checkpoint with model weights and
                 # optimizer state
                 checkpoint['g_state'] = generator.state_dict()
@@ -367,6 +374,7 @@ def discriminator_step(
      loss_mask, seq_start_end) = batch
     losses = {}
     loss = torch.zeros(1).to(pred_traj_gt)
+
 
     generator_out = generator(obs_traj, obs_traj_rel, seq_start_end)
 

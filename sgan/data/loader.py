@@ -1,6 +1,6 @@
 from torch.utils.data import DataLoader
 
-from sgan.data.trajectories import InferenceTrajectoryDataset, TrajectoryDataset, seq_collate
+from sgan.sgan.data.trajectories import InferenceTrajectoryDataset, TrajectoryDataset, seq_collate
 
 def inference_data_loader(args,data):
     dset = InferenceTrajectoryDataset(

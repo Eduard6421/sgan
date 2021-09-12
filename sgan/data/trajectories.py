@@ -108,13 +108,19 @@ class InferenceTrajectoryDataset(Dataset):
             frame_data.append(data[frame == data[:, 0], :])
         num_sequences = int(
             math.ceil((len(frames) - self.seq_len + 1) / skip))
+
+
         #print("frames length {}".format(len(frames)))
         #print("sequence length {}".format(self.seq_len))
         #print("skip value {}".format(skip))
+        #print("num sequences {}".format(num_sequences))
+        #print(frame_data)
+
+
         #
-        for idx in range(0, num_sequences * self.skip, skip):
+        for idx in range(0, 1, skip):
             
-            #print("from {} to {} idx {}".format(0,num_sequences* self.skip,idx))
+            print("from {} to {} idx {}".format(0,num_sequences* self.skip,idx))
             
             curr_seq_data = np.concatenate(
                 frame_data[idx:idx + self.seq_len], axis=0)
@@ -132,8 +138,8 @@ class InferenceTrajectoryDataset(Dataset):
                 curr_ped_seq = np.around(curr_ped_seq, decimals=4)
                 pad_front = frames.index(curr_ped_seq[0, 0]) - idx
                 pad_end = frames.index(curr_ped_seq[-1, 0]) - idx + 1
-                if pad_end - pad_front != self.seq_len:
-                    continue
+                #if pad_end - pad_front != self.seq_len:
+                #    continue
                 curr_ped_seq = np.transpose(curr_ped_seq[:, 2:])
                 curr_ped_seq = curr_ped_seq
                 # Make coordinates relative
@@ -144,11 +150,13 @@ class InferenceTrajectoryDataset(Dataset):
                 curr_seq[_idx, :, pad_front:pad_end] = curr_ped_seq
                 curr_seq_rel[_idx, :, pad_front:pad_end] = rel_curr_ped_seq
                 # Linear vs Non-Linear Trajectory
+                #print('----------here i have it ----------')
+                #print(curr_ped_seq)
                 _non_linear_ped.append(
-                    poly_fit(curr_ped_seq, pred_len, threshold))
+                    poly_fit(curr_ped_seq, 8, threshold))
                 curr_loss_mask[_idx, pad_front:pad_end] = 1
                 num_peds_considered += 1
-            if num_peds_considered > min_ped:
+            if num_peds_considered > 0:
                 non_linear_ped += _non_linear_ped
                 num_peds_in_seq.append(num_peds_considered)
                 loss_mask_list.append(curr_loss_mask[:num_peds_considered])
